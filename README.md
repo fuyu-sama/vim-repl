@@ -1,5 +1,10 @@
-[![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/banner2-direct.svg)](https://vshymanskyy.github.io/StandWithUkraine)
+A private fork of [sillybun/vim-repl](https://github.com/sillybun/vim-repl) with several features:
 
+### Remote access
+
+If `g:repl_remote` exists, vim-repl will try to run `ssh g:repl_remote` first to connect to a remote host.
+
+Original README.md:
 
 # vim-repl
 

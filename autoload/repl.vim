@@ -97,9 +97,9 @@ function! repl#REPLGetName()
     if exists('t:REPL_OPEN_TERMINAL')
         return t:REPL_OPEN_TERMINAL
     elseif &buftype ==# 'terminal'
-		return bufname('%')[1:]
-	elseif has_key(g:repl_program, &filetype)
-		let l:repl_options = g:repl_program[&filetype]
+        return bufname('%')[1:]
+    elseif has_key(g:repl_program, &filetype)
+        let l:repl_options = g:repl_program[&filetype]
         if type(l:repl_options) == 1
             return l:repl_options
         else
@@ -117,15 +117,15 @@ function! repl#REPLGetName()
                 endif
             endif
         endif
-	elseif has_key(g:repl_program, 'default')
-		let l:repl_options = g:repl_program['default']
+    elseif has_key(g:repl_program, 'default')
+        let l:repl_options = g:repl_program['default']
         if type(l:repl_options) == 3
             return l:repl_options[0]
         else
             return l:repl_options
-	else
-		return 'bash'
-	endif
+    else
+        return 'bash'
+    endif
 endfunction
 
 function! repl#StringAfter(word, token)
@@ -178,25 +178,25 @@ function! repl#REPLGetExitCommand(...)
     else
         let l:name = a:1
     end
-	if has_key(g:repl_exit_commands, l:name)
-		return g:repl_exit_commands[l:name]
-	elseif has_key(g:repl_exit_commands, 'default')
-		return g:repl_exit_commands['default']
-	else
-		return 'exit'
-	endif
+    if has_key(g:repl_exit_commands, l:name)
+        return g:repl_exit_commands[l:name]
+    elseif has_key(g:repl_exit_commands, 'default')
+        return g:repl_exit_commands['default']
+    else
+        return 'exit'
+    endif
 endfunction
 
 function! repl#REPLGoToWindowForBufferName(name)
-	if bufwinnr(bufnr(a:name)) != -1
-		exe bufwinnr(bufnr(a:name)) . 'wincmd w'
-		return 1
-	else
-		return 0
-	endif
+    if bufwinnr(bufnr(a:name)) != -1
+        exe bufwinnr(bufnr(a:name)) . 'wincmd w'
+        return 1
+    else
+        return 0
+    endif
 endfunction
 function! repl#REPLClose()
-	if repl#REPLIsVisible()
+    if repl#REPLIsVisible()
         if index(split(repl#REPLGetName(), ' '), 'ipdb') != -1 || index(split(repl#REPLGetName(), ' '), 'pdb') != -1
             call term_sendkeys(repl#GetConsoleName(), "\<C-W>\<C-C>")
             call repl#Sends(['quit()'], ['ipdb>', 'pdb>'])
@@ -232,6 +232,12 @@ function! repl#REPLClose()
             if has('win32')
                 let l:temp_return = "\r"
             endif
+            if exists('g:REPL_IS_REMOTE')
+                call term_wait(repl#GetConsoleName(), 1000)
+                call term_sendkeys(repl#GetConsoleName(), repl#REPLGetExitCommand(repl#REPLGetShell()) . l:temp_return)
+                call term_wait(repl#GetConsoleName(), 50)
+                unlet g:REPL_IS_REMOTE
+            endif
             if exists('g:REPL_VIRTUAL_ENVIRONMENT')
                 call term_sendkeys(repl#GetConsoleName(), 'deactivate' . l:temp_return)
                 call term_wait(repl#GetConsoleName(), 50)
@@ -239,21 +245,21 @@ function! repl#REPLClose()
                 call term_wait(repl#GetConsoleName(), 50)
                 unlet g:REPL_VIRTUAL_ENVIRONMENT
             endif
-		endif
+        endif
     elseif repl#REPLIsHidden()
         call repl#REPLUnhide()
         call repl#REPLClose()
         return
-	endif
+    endif
     exe bufwinnr(g:repl_target_n) . 'wincmd w'
     unlet t:REPL_OPEN_TERMINAL
 endfunction
 
 function! repl#REPLHide()
-	if repl#REPLIsVisible()
-		call repl#REPLGoToWindowForBufferName(repl#GetConsoleName())
+    if repl#REPLIsVisible()
+        call repl#REPLGoToWindowForBufferName(repl#GetConsoleName())
         hide
-	endif
+    endif
 endfunction
 
 function! repl#REPLUnhide()
@@ -278,20 +284,25 @@ function! repl#REPLOpen(...)
         let t:REPL_OPEN_TERMINAL = join(a:000, ' ')
     endif
     let l:REPL_OPEN_TERMINAL = t:REPL_OPEN_TERMINAL
-	exe 'autocmd bufenter * if (winnr("$") == 1 && (&buftype == ''terminal'') && bufexists(repl#GetConsoleName())) | q! | endif'
+    exe 'autocmd bufenter * if (winnr("$") == 1 && (&buftype == ''terminal'') && bufexists(repl#GetConsoleName())) | q! | endif'
     if !executable(split(repl#REPLGetName(), ' ')[0])
         echoerr 'The program ' . split(repl#REPLGetName(), ' ')[0] . ' is not executable.'
+    endif
+    if has('win32')
+        let l:temp_return = "\r"
+    else
+        let l:temp_return = "\n"
     endif
     if repl#REPLGetShortName() =~# '.*python.*'
         if repl#REPLGetShortName() == 'ipython' && !exists("g:repl_ipython_version")
             let temp = system(t:REPL_OPEN_TERMINAL . ' --version')
-			"This truncation was removed in part of fixing Issue #148
-			"I (shawsa) am not sure what purpose this served, and I can only
-			"test this on my particular configuration. It doesn't seem to have
-			"broken anything, but I'll leave the old code in in case it needs
-			"to be reverted (without reverting the other code in this commit).
+            "This truncation was removed in part of fixing Issue #148
+            "I (shawsa) am not sure what purpose this served, and I can only
+            "test this on my particular configuration. It doesn't seem to have
+            "broken anything, but I'll leave the old code in in case it needs
+            "to be reverted (without reverting the other code in this commit).
             let g:repl_ipython_version = temp
-			"let g:repl_ipython_version = temp[0:2]
+            "let g:repl_ipython_version = temp[0:2]
         endif
         for l:i in range(1, line('$'))
             if repl#StartWith(getline(l:i), '#REPLENV:')
@@ -326,11 +337,7 @@ function! repl#REPLOpen(...)
                 endif
                 exe 'file ' . repl#GetConsoleName()
                 exe 'setlocal noswapfile'
-                if has('win32')
-                    let l:temp_return = "\r\n"
-                else
-                    let l:temp_return = "\n"
-                endif
+                call repl#REPLRemote()
                 if repl#StartWith(g:REPL_VIRTUAL_ENVIRONMENT, "conda")
                     call term_sendkeys(repl#GetConsoleName(), g:REPL_VIRTUAL_ENVIRONMENT . l:temp_return)
                 else
@@ -341,39 +348,37 @@ function! repl#REPLOpen(...)
                 return
             endif
         endfor
+    endif
+    if g:repl_position == 0
+        if exists('g:repl_height')
+            exe 'bo term ++close ++rows=' . float2nr(g:repl_height) . ' ' . repl#REPLGetShell()
+        else
+            exe 'bo term ++close ' . repl#REPLGetShell()
+        endif
+    elseif g:repl_position == 1
+        if exists('g:repl_height')
+            exe 'to term ++close ++rows=' . float2nr(g:repl_height) . ' ' . repl#REPLGetShell()
+        else
+            exe 'to term ++close ' . repl#REPLGetShell()
+        endif
+    elseif g:repl_position == 2
+        if exists('g:repl_width')
+            exe 'vert term ++close ++cols=' . float2nr(g:repl_width) . ' ' . repl#REPLGetShell()
+        else
+            exe 'vert term ++close ' . repl#REPLGetShell()
+        endif
+    else
+        if exists('g:repl_width')
+            exe 'vert rightb term ++close ++cols=' . float2nr(g:repl_width) . ' ' . repl#REPLGetShell()
+        else
+            exe 'vert rightb term ++close ' . repl#REPLGetShell()
+        endif
+    endif
+    exe 'file ' . repl#GetConsoleName()
+    exe 'setlocal noswapfile'
+    call repl#REPLRemote()
+    if repl#REPLGetShortName() =~# '.*python.*'
         if exists('g:repl_python_pre_launch_command')
-            if g:repl_position == 0
-                if exists('g:repl_height')
-                    exe 'bo term ++close ++rows=' . float2nr(g:repl_height) . ' ' . repl#REPLGetShell()
-                else
-                    exe 'bo term ++close ' . repl#REPLGetShell()
-                endif
-            elseif g:repl_position == 1
-                if exists('g:repl_height')
-                    exe 'to term ++close ++rows=' . float2nr(g:repl_height) . ' ' . repl#REPLGetShell()
-                else
-                    exe 'to term ++close ' . repl#REPLGetShell()
-                endif
-            elseif g:repl_position == 2
-                if exists('g:repl_width')
-                    exe 'vert term ++close ++cols=' . float2nr(g:repl_width) . ' ' . repl#REPLGetShell()
-                else
-                    exe 'vert term ++close ' . repl#REPLGetShell()
-                endif
-            else
-                if exists('g:repl_width')
-                    exe 'vert rightb term ++close ++cols=' . float2nr(g:repl_width) . ' ' . repl#REPLGetShell()
-                else
-                    exe 'vert rightb term ++close ' . repl#REPLGetShell()
-                endif
-            endif
-            exe 'file ' . repl#GetConsoleName()
-            exe 'setlocal noswapfile'
-            if has('win32')
-                let l:temp_return = "\r"
-            else
-                let l:temp_return = "\n"
-            endif
             if has('win32')
                 if repl#StartWith(g:repl_python_pre_launch_command, 'conda ')
                     let g:REPL_VIRTUAL_ENVIRONMENT = repl#Strip(g:repl_python_pre_launch_command[strlen('conda '):])
@@ -385,37 +390,9 @@ function! repl#REPLOpen(...)
             endif
             call term_sendkeys(repl#GetConsoleName(), g:repl_python_pre_launch_command . l:temp_return)
             call term_wait(repl#GetConsoleName(), 100)
-            call term_sendkeys(repl#GetConsoleName(), l:REPL_OPEN_TERMINAL . l:temp_return)
-            return
         endif
     endif
-	if g:repl_position == 0
-		if exists('g:repl_height')
-			exe 'bo term ++close ++rows=' . float2nr(g:repl_height) . ' ' . repl#REPLGetName()
-		else
-			exe 'bo term ++close ' . repl#REPLGetName()
-		endif
-	elseif g:repl_position == 1
-		if exists('g:repl_height')
-			exe 'to term ++close ++rows=' . float2nr(g:repl_height) . ' ' . repl#REPLGetName()
-		else
-			exe 'to term ++close ' . repl#REPLGetName()
-		endif
-	elseif g:repl_position == 2
-		if exists('g:repl_width')
-			exe 'vert term ++close ++cols=' . float2nr(g:repl_width) . ' ' . repl#REPLGetName()
-		else
-			exe 'vert term ++close ' . repl#REPLGetName()
-		endif
-	else
-		if exists('g:repl_width')
-			exe 'vert rightb term ++close ++cols=' . float2nr(g:repl_width) . ' ' . repl#REPLGetName()
-		else
-			exe 'vert rightb term ++close ' . repl#REPLGetName()
-		endif
-	endif
-    exe 'file ' . repl#GetConsoleName()
-    exe 'setlocal noswapfile'
+    call term_sendkeys(repl#GetConsoleName(), l:REPL_OPEN_TERMINAL . l:temp_return)
 endfunction
 
 function! repl#REPLIsHidden()
@@ -429,22 +406,22 @@ function! repl#REPLIsHidden()
 endfunction
 
 function! repl#REPLIsVisible()
-	if bufwinnr(bufnr(repl#GetConsoleName())) != -1
-		return 1
-	else
-		return 0
-	endif
+    if bufwinnr(bufnr(repl#GetConsoleName())) != -1
+        return 1
+    else
+        return 0
+    endif
 endfunction
 
 function! repl#REPLToggle(...)
-	if repl#REPLIsVisible()
-		call repl#REPLClose()
+    if repl#REPLIsVisible()
+        call repl#REPLClose()
     elseif repl#REPLIsHidden()
         call repl#REPLUnhide()
     else
         let l:cursor_pos = getpos('.')
-		let g:repl_target_n = bufnr('')
-		let g:repl_target_f = @%
+        let g:repl_target_n = bufnr('')
+        let g:repl_target_f = @%
         try
             call call(function('repl#REPLOpen'), a:000)
         catch /Unexpected-input-received/
@@ -483,14 +460,14 @@ function! repl#REPLToggle(...)
             endif
             call cursor(l:cursor_pos[1], l:cursor_pos[2])
         endif
-	endif
+    endif
 endfunction
 
 function! repl#SendCurrentLine()
     if g:repl_unhide_when_send_lines && repl#REPLIsHidden()
         call repl#REPLUnhide()
     endif
-	if bufexists(repl#GetConsoleName())
+    if bufexists(repl#GetConsoleName())
         let l:cursor_pos = getpos('.')
         if repl#REPLWin32Return()
             let l:code_tobe_sent = getline('.') . "\r\n"
@@ -567,14 +544,14 @@ function! repl#SendCurrentLine()
             endwhile
             call cursor(l:next_line_number, l:cursor_pos[2])
         endif
-	endif
+    endif
 endfunction
 
 function! repl#SendRHSofCurrentLine()
     if g:repl_unhide_when_send_lines && repl#REPLIsHidden()
         call repl#REPLUnhide()
     endif
-	if bufexists(repl#GetConsoleName())
+    if bufexists(repl#GetConsoleName())
         let l:cursor_pos = getpos('.')
         if repl#REPLWin32Return()
             let l:code_tobe_sent = getline('.') . "\r\n"
@@ -614,7 +591,7 @@ function! repl#SendRHSofCurrentLine()
             endwhile
             call cursor(l:next_line_number, l:cursor_pos[2])
         endif
-	endif
+    endif
 endfunction
 
 function! repl#ToVimScript(lines)
@@ -843,11 +820,11 @@ function! repl#SendChunkLines() range abort
 endfunction
 
 function! repl#SendLines(first, last) abort
-	if bufexists(repl#GetConsoleName())
-		let l:firstline = a:first
-		while(l:firstline <= a:last && strlen(getline(l:firstline)) == 0)
-			let l:firstline = l:firstline + 1
-		endwhile
+    if bufexists(repl#GetConsoleName())
+        let l:firstline = a:first
+        while(l:firstline <= a:last && strlen(getline(l:firstline)) == 0)
+            let l:firstline = l:firstline + 1
+        endwhile
         let l:sn = repl#REPLGetShortName()
         if l:sn ==# 'ptpython'
             call repl#Sends(repl#ToREPLPythonCode(getline(l:firstline, a:last), 'ptpython'), ['\.\.\.', '>>>', 'ipdb>', 'pdb>'])
@@ -880,7 +857,7 @@ function! repl#SendLines(first, last) abort
                 exe "call term_sendkeys('" . repl#GetConsoleName() . ''', "\n")'
             endif
         endif
-	endif
+    endif
 endfunction
 
 function! repl#SendAll() abort
@@ -1080,4 +1057,18 @@ EOF
     echo 'Current File Type: ' . &filetype
     echo 'Current Type: ' . repl#REPLGetName()
     echo 'Current Exit Commands: ' . repl#REPLGetExitCommand()
+endfunction
+
+function! repl#REPLRemote()
+    if has('win32')
+        let l:temp_return = "\r\n"
+    else
+        let l:temp_return = "\n"
+    endif
+    if exists("g:repl_remote")
+        call term_sendkeys(repl#GetConsoleName(), 'ssh ' . g:repl_remote . l:temp_return)
+        let l:cwd = substitute(getcwd(), $HOME, '$HOME', '')
+        call term_sendkeys(repl#GetConsoleName(), 'cd ' . l:cwd . l:temp_return)
+        let g:REPL_IS_REMOTE = 1
+    endif
 endfunction
