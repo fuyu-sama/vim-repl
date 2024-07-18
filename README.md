@@ -4,6 +4,11 @@ A personal fork of [sillybun/vim-repl](https://github.com/sillybun/vim-repl) wit
 
 If `g:repl_remote` exists, vim-repl will try to run `ssh g:repl_remote` first to connect to a remote host.
 
+### Global pre launch command
+
+If `g:repl_pre_launch_command` exists, vim-repl will try to run `g:repl_pre_launch_command` after repl_remote,
+pirior to `g:repl_python_pre_launch_command`.
+
 # vim-repl
 
 * [vim-repl](#vim-repl)

@@ -377,6 +377,10 @@ function! repl#REPLOpen(...)
     exe 'file ' . repl#GetConsoleName()
     exe 'setlocal noswapfile'
     call repl#REPLRemote()
+    if exists('g:repl_pre_launch_command')
+        call term_sendkeys(repl#GetConsoleName(), g:repl_pre_launch_command . l:temp_return)
+        call term_wait(repl#GetConsoleName(), 100)
+    endif
     if repl#REPLGetShortName() =~# '.*python.*'
         if exists('g:repl_python_pre_launch_command')
             if has('win32')
@@ -1067,8 +1071,10 @@ function! repl#REPLRemote()
     endif
     if exists("g:repl_remote")
         call term_sendkeys(repl#GetConsoleName(), 'ssh ' . g:repl_remote . l:temp_return)
+        call term_wait(repl#GetConsoleName(), 100)
         let l:cwd = substitute(getcwd(), $HOME, '$HOME', '')
         call term_sendkeys(repl#GetConsoleName(), 'cd ' . l:cwd . l:temp_return)
+        call term_wait(repl#GetConsoleName(), 100)
         let g:REPL_IS_REMOTE = 1
     endif
 endfunction
